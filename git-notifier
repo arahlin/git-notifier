@@ -42,6 +42,7 @@ Options = [
     ("noupdate", False, False, "do not update the state file"),
     ("repouri", True, None, "full URI for the repository"),
     ("sender", True, sender, "sender address for mails"),
+    ("defaultsender", True, sender, "default sender address for mails if user not in users list"),
     ("link", True, None, "Link to insert into mail, %s will be replaced with revision"),
     ("updateonly", False, False, "update state file only, no mails"),
     ("users", True, None, "location of a user-to-email mapping file"),
@@ -170,6 +171,7 @@ class GitConfig:
 
     def readUsers(self):
         if self.users and os.path.exists(self.users):
+            done = False
             for line in open(self.users):
                 line = line.strip()
                 if not line or line.startswith("#"):
@@ -179,7 +181,10 @@ class GitConfig:
 
                 if self.sender and self.sender == m[0]:
                     self.sender = " ".join(m[1:])
+                    done = True
                     break
+            if not done:
+                self.sender = self.defaultsender
 
     def _git_config(self, key, default):
         cfg = git(["config hooks.%s" % key])
