@@ -149,6 +149,9 @@ class GitConfig:
         for (name, arg, default, help) in Options:
             defval = self._git_config(name, default)
 
+            if not arg and isinstance(defval, basestring):
+                defval = defval.lower() in ['true','t','yes','y']
+
             if isinstance(default, int):
                 defval = int(defval)
 
