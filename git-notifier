@@ -15,6 +15,7 @@ VERSION   = "0.42-4"  # Filled in automatically.
 Name      = "git-notifier"
 CacheFile = ".%s.dat" % Name
 Separator = "\n>---------------------------------------------------------------\n"
+CommitSep = "\n%s\n%s\n" % ('='*80,'='*80)
 NoDiff    = "[nodiff]"
 NoMail    = "[nomail]"
 
@@ -30,6 +31,7 @@ sender = os.environ["GL_USER"] if gitolite else None
 Options = [
     # Name, argument, default, help,
     ("allchanges", True, set(), "branches for which *all* changes are to be reported"),
+    ("digest", False, False, "combine multiple commits into one email"),
     ("debug", False, False, "enable debug output"),
     ("diff", True, None, "mail out diffs between two revisions"),
     ("emailprefix", True, "[git/%r]", "Subject prefix for mails"),
@@ -276,7 +278,13 @@ def deleteTmps():
 def mailTag(key, value):
     return "%-11s: %s" % (key, value)
 
+digest_out = None
+digest_fname = ''
+
 def generateMailHeader(subject, rev=None):
+    
+    global digest_out,digest_fname
+    
     if Config.mailsubjectlen:
         try:
             maxlen = int(Config.mailsubjectlen)
@@ -299,6 +307,9 @@ def generateMailHeader(subject, rev=None):
         if repo.endswith(".git"):
             repo = repo[0:-4]
 
+    if Config.digest and digest_out is not None:
+        return (digest_out,digest_fname)
+
     (out, fname) = makeTmp()
 
     replyto = "Reply-To: %s\n" % Config.replyto if Config.replyto else ""
@@ -314,6 +325,9 @@ def generateMailHeader(subject, rev=None):
         else:
             sender = whoami
 
+    digest_out = out
+    digest_fname = fname
+    
     print >>out, """From: %s
 To: %s
 Subject: %s %s
@@ -328,6 +342,8 @@ X-Mailer: %s %s
     return (out, fname)
 
 def sendMail(out, fname):
+    global digest_out, digest_fname
+    
     out.close()
 
     if Config.debug:
@@ -345,6 +361,10 @@ def sendMail(out, fname):
     # which may then make them appear to have arrived in the wrong order.
     if not Config.debug:
         time.sleep(2)
+
+    if Config.digest:
+        digest_out = None
+        digest_fname = ''
 
 def entryAdded(key, value, rev):
     log("New %s %s" % (key, value))
@@ -370,6 +390,9 @@ def entryDeleted(key, value):
 def sendChangeMail(rev, subject, heads, show_cmd, diff_cmd, stat_cmd):
 
     (out, fname) = generateMailHeader(subject, rev)
+
+    if Config.digest:
+        print >>out, CommitSep
 
     multi = "es" if len(heads) > 1 else ""
     heads = ",".join(heads)
@@ -426,7 +449,8 @@ def sendChangeMail(rev, subject, heads, show_cmd, diff_cmd, stat_cmd):
         print >>out, "debug: diff_cmd = git %s" % diff_cmd
         print >>out, "debug: stat_cmd = git %s" % stat_cmd
 
-    sendMail(out, fname)
+    if not Config.digest:
+        sendMail(out, fname)
 
 # Sends notification for a specific revision.
 def commit(current, rev, force=False, subject_head=None):
@@ -492,17 +516,25 @@ def diffPath(head, revs):
         if last:
             diff(head, last, rev)
         last = rev
+        
+    if Config.digest:
+        sendMail(digest_out, digest_fname)
 
 # Sends a commit notifications for a set of revisions.
 def reportPath(current, revs, force=False, subject_head=None):
     if not revs:
         return
 
+    reverse = '' if Config.digest else '--reverse'
+
     # Sort updates by time.
-    revs = git("rev-list --no-walk --reverse --date-order %s" % " ".join(revs))
+    revs = git("rev-list --no-walk %s --date-order %s" % (reverse, " ".join(revs)))
 
     for rev in revs:
         commit(current, rev, force=force, subject_head=subject_head)
+        
+    if Config.digest:
+        sendMail(digest_out, digest_fname)
 
 # Sends a summary mail for a set of revisions.
 def headMoved(head, path):
@@ -548,7 +580,8 @@ if Config.diff:
     else:
         path = ("%s~1" % path[0], path[1])
 
-    revs = git(["rev-list", "--reverse --date-order", path[1], "^%s" % path[0]])
+    reverse = '' if Config.digest else '--reverse'
+    revs = git(["rev-list", "%s --date-order" % reverse, path[1], "^%s" % path[0]])
 
     diffPath("<manual-diff>", revs)
 
@@ -560,7 +593,8 @@ if Config.manual:
     if len(path) == 1:
         path = ("%s~1" % path[0], path[0])
 
-    revs = git(["rev-list", "--reverse --date-order", path[1], "^%s" % path[0]])
+    reverse = '' if Config.digest else '--reverse'
+    revs = git(["rev-list", "%s --date-order" % reverse, path[1], "^%s" % path[0]])
     reportPath(current, revs, force=True)
 
     sys.exit(0)
@@ -599,7 +633,8 @@ if report:
     for head in stable_heads:
         old_rev = cache.heads[head]
         new_rev = current.heads[head]
-        path = git(["rev-list", "--reverse --date-order", new_rev, "^%s" % old_rev])
+        reverse = '' if Config.digest else '--reverse'
+        path = git(["rev-list", "%s --date-order" % reverse, new_rev, "^%s" % old_rev])
 
         if head in Config.allchanges:
             # Want to see all commits for this head, even if already reported
