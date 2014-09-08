@@ -317,6 +317,9 @@ def generateMailHeader(subject, rev=None):
     (out, fname) = makeTmp()
 
     replyto = "Reply-To: %s\n" % Config.replyto if Config.replyto else ""
+    if rev:
+        Config.sender = whoami
+        Config.readUsers()
     sender = Config.sender
 
     emailprefix = Config.emailprefix
