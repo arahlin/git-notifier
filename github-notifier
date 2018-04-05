@@ -11,7 +11,7 @@ import subprocess
 import sys
 import github
 
-VERSION   = "0.5"  # Filled in automatically.
+VERSION   = "0.7-17"  # Filled in automatically.
 
 Name       = "github-notifier"
 ConfigFile = "./%s.cfg" % Name
@@ -79,9 +79,15 @@ def gitUpdate(repo):
 
     pushDirectory(repo.path)
     runCommand("git --bare init --quiet")
-    runCommand("git --bare fetch --quiet %s +refs/heads/*:refs/heads/*" % repo.url(True))
-    runCommand("git --bare fetch --quiet %s +refs/tags/*:refs/tags/*" % repo.url(True))
-    runCommand("git remote update >/dev/null")
+    runCommand("git --bare fetch --prune --quiet %s +refs/heads/*:refs/heads/*" % repo.url(True))
+    runCommand("git --bare fetch --prune --quiet %s +refs/tags/*:refs/tags/*" % repo.url(True))
+    runCommand("git remote update >/dev/null 2>&1")
+
+    # git-notifier picks this up.
+    fname = open("repo-name.dat", "w")
+    print >>fname, repo.name
+    fname.close()
+
     popDirectory()
 
 def runNotifier(repo):
@@ -151,7 +157,9 @@ class Repository:
             gitClone(self)
 
         gitUpdate(self)
-        runNotifier(self)
+
+        if not Options.update_only:
+            runNotifier(self)
 
     def __str__(self):
         return self.path
@@ -241,6 +249,8 @@ optparser.add_option("-c", "--config", action="store", dest="config", default=Co
                      help="specify alternative configuration file to use")
 optparser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
                      help="enable debug mode, logs to stderr")
+optparser.add_option("-u", "--update-only", action="store_true", dest="update_only", default=False,
+                     help="update the local clones only, do not run git-notifier")
 
 (Options, args) = optparser.parse_args()
 

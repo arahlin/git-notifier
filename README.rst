@@ -3,7 +3,7 @@
 .. |date| date::
 
 .. Version number is filled in automatically.
-.. |version| replace:: 0.5
+.. |version| replace:: 0.7-17
 
 git-notifier
 ============
@@ -31,7 +31,7 @@ keeping a state file of already reported revisions.
 ``git-notifier`` integrates nicely with `gitolite
 <https://github.com/sitaramc/gitolite>`_, and it also comes with a
 companion script ``github-notifier`` that watches `GitHub
-<github.com>`_ repositories for changes.
+<https://github.com/rsmmr/git-notifier>`_ repositories for changes.
 
 Here's example of a ``git-notifier`` mail::
 
@@ -89,16 +89,15 @@ mail will be send for that change.
 Download
 --------
 
-The current release is `git-notifier 0.5
-<http://www.icir.org/robin/git-notifier/git-notifier-0.5.tar.gz>`_
+The current release is `git-notifier 0.7
+<http://www.icir.org/robin/git-notifier/git-notifier-0.7.tar.gz>`_
 
 Not surprisingly, ``git-notifier`` is maintained in a git repository
-that you clone::
+that you can clone::
 
     git clone git://git.icir.org/git-notifier
 
-You can also `browse the repository
-<http://git.icir.org/git-notifier.git>`_
+The repository is also `mirrored to GitHub <https://github.com/rsmmr/git-notifier>`_.
 
 History
 -------
@@ -125,10 +124,30 @@ option below.
 Usage
 -----
 
-``git-notifier`` supports the options below. Alternatively to
-giving them on the command line, all of them can alse be set via
-``git config hooks.<option>``. For example, to set a recipient
-address, do ``git config hooks.mailinglist git-updates@foo.com``:
+``git-notifier`` supports the options below. Options can be either set
+on the command line, by editing a configuration file, or on a
+per-repository basis via ``git config hooks.<option>`` (this order
+also defines the priority when the same option appears multiple
+times). For example, to set a recipient address, do ``git config
+hooks.mailinglist git-updates@foo.com``:
+
+``git-notifier`` looks for a configuration file in three places, in
+this order:
+
+    * A configuration file can be specified on the command line
+      through ``--config <path>``.
+
+    * A configuration file can be specified by setting the environment
+      variable ``GIT_NOTIFIER_CONFIG`` to the path of the file.
+
+    * If neither of these is given, ``git-notifier`` looks for a file
+      ``git-notifier.conf`` in the same directory that the script itself
+      is located.
+
+The configuration file uses "INI-style", with an example coming with
+``git-notifier``.
+
+The options are:
 
     ``--allchanges <branches>``
         Lists branches for which *all* changes made to them should be
@@ -138,7 +157,15 @@ address, do ``git config hooks.mailinglist git-updates@foo.com``:
         include the full diff (i.e., git's ``diff -m``). This might
         for example make sense for ``master`` if one wants to closely
         track any modification applied. ``<branches>`` is a list of
-        command-separated names of heads to treat this way.
+        comma-separated names of heads to treat this way.
+
+    ``--branches <branches>``
+        Lists branches to include/exclude in reporting. By default,
+        all branches are included. If this option is specified, only
+        branches listed are included. Alternatively, one can prefix a
+        branch with ``-`` to *exclude* it: then all but the excluded
+        ones are reported. ``<branches>`` is a list of comma-separated
+        names of heads to treat this way.
 
     ``--debug``
         Prints the mails that would normally be generated to
@@ -171,6 +198,10 @@ address, do ``git config hooks.mailinglist git-updates@foo.com``:
         option is compatible with some of other git notification
         scripts.
 
+    ``--gitbasedir"``
+        Specifies a base directory for the git repository. If not given,
+        the current directory is the default.
+
     ``--hostname <name>``
         Defines the hostname to use when building the repository
         path shown in the notification mails. Default is the
@@ -179,6 +210,13 @@ address, do ``git config hooks.mailinglist git-updates@foo.com``:
     ``--ignoreremotes``
         If given, ``git-notifier`` will not report any commits that
         are already known by any configured remote repository. 
+
+    ``--keeprealnames``
+        If used along with ``--sender``, mails will preserve
+        the committer's real name in their ``From`` line, while still
+        using the ``--sender`` email address. This can be useful if the
+        outgoing mail server does not permit setting arbitrary sender
+        email addresses.
 
     ``--link <url>``
         Specifies a URL that will be included into notification mails
@@ -190,6 +228,28 @@ address, do ``git config hooks.mailinglist git-updates@foo.com``:
     ``--log <file>``
         Write logging information into the given file. Default is
         ``git-notifier.log`` inside the repository.
+
+    ``--mailcmd <command>``
+        Specifies the command to use for sending mail. Default is
+        /usr/sbin/sendmail.
+
+    ``--mailserver <host>[:<port>]``
+        SMTP server to use for outgoing mails. Default is None, in
+        which case mail gets sent through the local ``sendmail`` (or
+        whatever ``--mailcmd`` defines alternatively).
+
+    ``--mailserverfrom <email>``
+        Alternative envelope sender address when using an SMTP server.
+        By default, the envelope sender is either the ``--sender`` if
+        given, or the destination ``--mailinglist`` if not.
+
+    ``--mailserverpassword <password>``
+        Password to use for authenticating to the SMTP server.
+        ``--mailserveruser`` must be given as well.
+
+    ``--mailserveruser <user>``
+        User name to use for authenticating to the SMTP server.
+        ``--mailserverpassword`` must be given as well.
 
     ``--mailinglist <address>``
         Specifies the recipient for all generated mails. Default is
@@ -219,6 +279,11 @@ address, do ``git config hooks.mailinglist git-updates@foo.com``:
         than this value, a notification mail is still send out but
         the diff is excluded (and replaced with a note saying so).
         Default is 50K.
+
+    ``--maxage <days>``
+        Limits the age of commits to report. No commit older than this
+        many days will trigger a commit notification. Default is 30
+        days; zero disables the age check.
 
     ``--noupdate``
         Does not update the internal state file, meaning that any
@@ -277,11 +342,12 @@ script maintains a local mirror of repositories you want to watch and
 runs ``git-notifier`` locally on those to generate the notification
 mails.
 
-To setup ``github-notifier`` you create a configuration file
-``github-notifier.cfg`` in the directory where you want to keep the
-clones. ``github-notifier.cfg`` is an "ini-style" file consisting of
-one or more sections, each of which defines a set of repositories to
-monitor.
+To setup ``github-notifier``, you first need to install `PyGithub
+<https://github.com/PyGithub/PyGithub>`_ (``pip install pygithub``).
+Then create a configuration file ``github-notifier.cfg`` in the
+directory where you want to keep the clones. ``github-notifier.cfg``
+is an "ini-style" file consisting of one or more sections, each of
+which defines a set of repositories to monitor.
 
 Here's an example set that watches just a single repository at
 ``github.com/bro/time-machine``::
@@ -352,7 +418,12 @@ Usage
         log more verbosely and to stderr, and (2) run ``git-notifier``
         with the ``--debug`` and ``--noupdate`` options.
 
+    ``--update-only``
+        Updates the local clones of all repositories, but do es not run
+        ``git-notifier`` for the changes. This can be helpful to catch
+        up with remote changes without reporting them.
+
 License
 -------
 
-``git-notifier`` comes with a BSD-style licence.
+``git-notifier`` comes with a BSD-style license.

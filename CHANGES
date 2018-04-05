@@ -1,4 +1,188 @@
 
+0.7-17 | 2017-05-21 18:27:33 -0700
+
+  * Sync tag/branch deletion by fetching with --prune. (Robert
+    Korulczyk)
+
+0.7-15 | 2017-03-17 16:26:14 -0700
+
+  * Disable 'maxage' check when zero, as the docs say. (Jeff Stein)
+
+  * Correct 'maxage' and 'maxdiffsize' parsing from config. Integers
+    were not getting parsed correctly from configuration files. (Jeff
+    Stein)
+
+  * Support SMTP port in the mail server setting, and remove the old
+    colon-syntax for specifying mail server credentials. (Jeff Stein)
+
+0.7-10 | 2017-01-11 00:37:35 -0500
+
+  * For new tags send emails with the tagger's address. Addresses #17.
+    (Robin Sommer)
+
+0.7-9 | 2016-10-15 10:08:51 -0700
+
+  * Fixing version information. (Robin Sommer)
+
+0.7-8 | 2016-10-15 09:57:18 -0700
+
+  * New SMTP options. (Robin Sommer)
+
+        ``--mailserveruser <user>``
+            User name to use for authenticating to the SMTP server.
+            ``--mailserverpassword`` must be given as well.
+
+        ``--mailserverpassword <password>``
+            Password to use for authenticating to the SMTP server.
+            ``--mailserveruser`` must be given as well.
+
+        ``--mailserverfrom <email>``
+            Alternative envelope sender address when using an SMTP server.
+            By default, the envelope sender is either the ``--sender`` if
+            given, or the destination ``--mailinglist`` if not.
+
+  * SMTP sessions are now using TLS. (Robin Sommer)
+
+  * SMTP sessions are now cached across multiple mails. (Robin Sommer)
+
+  * Prettyfing repository names in github-notifier. (Robin Sommer)
+
+  * New option to preserver committer's real name. (Robin Sommer)
+
+    ``--keeprealnames``
+            If used along with ``--sender``, the mails will preserve the
+            committer's real name in their ``From`` line, while still
+            using the ``--sender`` email address. This can be useful if the
+            outgoing mail server does not permit setting arbitrary sender
+            email addresses.
+
+  * Fix Python version incompatibility. (Robin Sommer)
+
+0.7-3 | 2016-09-28 12:59:27 -0700
+
+  * Adding note that github-notifier requires PyGitHub. (Robin Sommer)
+
+  * Explicitly specifying encoding when reading configuration file.
+    Leaving it out could cause exceptions in some settings. (Robin
+    Sommer)
+
+0.7-1 | 2016-07-25 08:05:14 -0700
+
+  * Remove use of git option --find-copies-harder. (Robin Sommer)
+
+0.7 | 2016-07-25 07:46:21 -0700
+
+  * Release 0.7.
+
+0.6-26 | 2016-02-25 11:17:13 -0800
+
+  * Adding --textconv to "git diff-tree" command. (Robin Sommer)
+
+0.6-25 | 2015-10-26 16:31:37 -0700
+
+  * Fixing typo in README.rst (Lev Lamberov)
+
+  * Adding initial version of manpages. (Lev Lamberov)
+
+0.6-22 | 2015-06-19 17:35:36 -0700
+
+  * Added a configuration option "gitbasedir" for specifying the base
+    directory in the file system that holds the git repository. (Jed
+    Liu)
+
+  * Support the following substitutions in user-specified
+    repositories: '%u' for username, '%h' for hostname, '%r' for repo
+    name. (Jed Liu)
+
+  * Ignore vim swap files. (Jed Liu)
+
+  * Abstracted the functionality for obtaining the repository name.
+    (Jed Liu)
+
+  * Added configuration file support. See the README for specifics.
+    (Jed Liu/Robin Sommer)
+
+  * Use email package to better ensure RFC-compliance, and to better
+    automate QP encoding of message bodies. (Jed Liu)
+
+0.6-11 | 2015-05-17 03:05:08 -0700
+
+  * New option --update-only for github-notifier. This only updates
+    the local clones of all repositories, but not no run git-notifier
+    on them. (Robin Sommer)
+
+0.6-10 | 2015-05-14 22:02:35 -0700
+
+  * Added 'mailcmd' option to allow non-standard sendmail location and
+    arguments. (Randall S. Becker)
+
+  * Transfer UTF-8 encoded body as quoted-printable. (Andrei Badea)
+
+  * Fixed exception from mimify when commit author contains non-latin1
+    characters. (Andrei Badea)
+
+  * Allow sending mail via SMTP as an alternative to sendmail.
+    (Wolfgang Schnerring)
+
+  * Retrieve date of tags properly. (Wolfgang Schnerring)
+
+0.6-5 | 2015-02-23 16:44:14 -0800
+
+  * Retrieve author of tags properly. (Wolfgang Schnerring)
+
+0.6-3 | 2015-01-30 13:53:50 -0800
+
+  * Add a Date header to the email with the original commit date.
+    (Wolfgang Schnerring)
+
+0.6-1 | 2015-01-17 08:18:16 -0800
+
+  * Fixing git-notifier to work with Python 2.6. (Vincent Danen)
+
+        - Replace code for getting current time with something more reasonable.
+        - Suppress deprecation warning for mimify.
+
+0.6 | 2015-01-08 07:53:04 -0800
+
+  * Release 0.6.
+
+0.5-6 | 2014-11-26 17:12:40 -0800
+
+  * New option to prevent reporting of old commits. (Robin Sommer)
+
+        ``--maxage <days>``
+            Limits the age of commits to report. No commit older than this
+            many days will trigger a commit notification. Default is 30
+            days; zero disables the age check.
+
+    This is primarily a safety measure to prevent mail floods when a
+    repository gets messed up.
+
+0.5-5 | 2014-10-24 10:04:04 -0700
+
+  * Adding new option --branches to include/exclude individual branches.
+
+        ``--branches <branches>``
+            Lists branches to include/exclude in reporting. By default,
+            all branches are included. If this option is specified, only
+            branches listed are included. Alternatively, one can prefix a
+            branch with ``-`` to *exclude* it: then all but the excluded
+            ones are reported. ``<branches>`` is a list of comma-separated
+            names of heads to treat this way. (Robin Sommer)
+
+  * Changing quoted-printable header encoding so that it works with
+    mutt. (Robin Sommer)
+
+  * allowing --update to work without existing/creating state file.
+    (Robin Sommer)
+
+0.5-3 | 2014-05-14 20:10:47 -0700
+
+  * Encode mail headers according to RFC 2047. (Robin Sommer)
+
+  * Don't send any emails for commits that aren't on any branch.
+    (Robin Sommer)
+
 0.5 | 2014-01-27 07:42:48 -0800
 
   * New option to skip updates that a remote already knows.
@@ -18,7 +202,7 @@
 0.42-3 | 2013-09-19 12:12:58 -0700
 
   * Initial version of new github-notifier script.
-    
+
     This script mirrors repositories from GitHub locally to then run
     git-notifier on them. Still experimental, documentation
     forthcoming. (Robin Sommer)
@@ -62,7 +246,7 @@
 0.41-2 | 2012-12-17 12:48:24 -0800
 
   * --updateonly now also applies to initial run. (Matthias Vallentin)
-    
+
 0.41-1 | 2012-11-06 08:36:12 -0800
 
   * Removing check preventing mails on initialization. (Robin Sommer)
