@@ -413,6 +413,7 @@ def deleteTmps():
 def mailTag(key, value):
     return "%-11s: %s" % (key, value)
 
+digest_subject = ''
 digest_out = None
 digest_fname = ''
 
@@ -453,15 +454,20 @@ def getRepo():
     return repo
 
 def startMailBody():
-    if Config.digest and digest_out is not None:
-        return (digest_out,digest_fname)
+    global digest_out, digest_fname
+
+    if Config.digest:
+        if digest_out is None:
+            (digest_out, digest_fname) = makeTmp()
+            print >>digest_out, mailTag("Repository", getRepo())
+        return (digest_out, digest_fname)
 
     (out, fname) = makeTmp()
     print >>out, mailTag("Repository", getRepo())
     return (out, fname)
 
 def generateMail(subject, body, rev, type):
-    global digest_out, digest_fname
+    global digest_subject
 
     if Config.mailsubjectlen:
         try:
@@ -507,13 +513,13 @@ def generateMail(subject, body, rev, type):
     else:
         sender = committer
 
-    digest_out = out
-    digest_fname = fname
-
     msg = email.message.Message()
     msg['From'] = encodeAddressList(sender)
     msg['To'] = encodeAddressList(Config.mailinglist)
     msg['Subject'] = encodeHeader('%s %s' % (emailprefix, subject))
+
+    if Config.digest and not digest_subject:
+        digest_subject = subject
 
     if Config.replyto:
         msg['Reply-To'] = encodeHeader(Config.replyto)
@@ -530,7 +536,7 @@ def generateMail(subject, body, rev, type):
     return msg.as_string()
 
 def sendMail(subject, out, fname, rev=None, type=None):
-    global digest_out, digest_fname
+    global digest_subject, digest_out, digest_fname
 
     out.close()
 
@@ -581,6 +587,7 @@ def sendMail(subject, out, fname, rev=None, type=None):
         time.sleep(2)
 
     if Config.digest:
+        digest_subject = ''
         digest_out = None
         digest_fname = ''
 
@@ -768,25 +775,24 @@ def diffPath(head, revs):
         if last:
             diff(head, last, rev)
         last = rev
-        
+
     if Config.digest:
-        sendMail(digest_out, digest_fname)
+        sendMail(digest_subject, digest_out, digest_fname)
 
 # Sends a commit notifications for a set of revisions.
 def reportPath(current, revs, force=False, subject_head=None):
     if not revs:
         return
 
-    reverse = '' if Config.digest else '--reverse'
-
     # Sort updates by time.
+    reverse = '' if Config.digest else '--reverse'
     revs = git("rev-list --no-walk %s --date-order %s" % (reverse, " ".join(revs)))
 
     for rev in revs:
         commit(current, rev, force=force, subject_head=subject_head)
-        
+
     if Config.digest:
-        sendMail(digest_out, digest_fname)
+        sendMail(digest_subject, digest_out, digest_fname)
 
 # Sends a summary mail for a set of revisions.
 def headMoved(head, path):
