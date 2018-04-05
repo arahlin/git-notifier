@@ -498,7 +498,10 @@ def generateMail(subject, body, rev, type):
         Config.readUsers()
 
     else:
-        committer = Config.defaultsender
+        if Config.sender:
+            committer = Config.sender
+        else:
+            committer = Config.defaultsender
 
     if Config.sender:
         if Config.keeprealnames:
