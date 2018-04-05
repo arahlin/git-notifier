@@ -34,6 +34,9 @@ Lists \fB<branches>\fR for which all changes made to them should be mailed out a
 
 \fB<branches>\fR is a list of comma-separated names of heads to treat this way.
 .TP
+.BI "\-\-digest"
+Combine all commits into a single email per branch, rather than sending one email per commit.
+.TP
 .BI "\-\-branches <branches>"
 Lists \fB<branches>\fR to include/exclude in reporting. By default, all branches are included. If this option is specified, only branches listed are included. Alternatively, one can prefix a branch with - to exclude it: then all but the excluded ones are reported.
 
@@ -129,6 +132,9 @@ for the repository
 .TP
 .BI "\-\-sender <address>"
 Defines the sender \fB<address>\fR for all generated mails. Default is the user doing the update (if \fBgitolite\fR is used, that's the gitolite acccount doing the push, not the system account running \fBgit-notifier\fR.)
+.TP
+.BI "\-\-defaultsnder <address>"
+Defines the sender \fB<address>\fR to use when the sender doing the push is not found in the \fB\-\-users\fR file.
 .TP
 .BI "\-\-update-only"
 Does not send out any mail notifications but still updates the index. In other words, all recent changes will be marked as "seen", without reporting them.

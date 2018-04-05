@@ -159,6 +159,10 @@ The options are:
         track any modification applied. ``<branches>`` is a list of
         comma-separated names of heads to treat this way.
 
+    ``--digest``
+        Combine all commits into a single email per branch, rather than
+	sending one email per commit.
+
     ``--branches <branches>``
         Lists branches to include/exclude in reporting. By default,
         all branches are included. If this option is specified, only
@@ -198,7 +202,7 @@ The options are:
         option is compatible with some of other git notification
         scripts.
 
-    ``--gitbasedir"``
+    ``--gitbasedir <dir>``
         Specifies a base directory for the git repository. If not given,
         the current directory is the default.
 
@@ -298,6 +302,10 @@ The options are:
         is the user doing the update (if gitolite is used, that's
         the gitolite acccount doing the push, not the system account
         running ``git-notifier``.)
+
+    ``--defaultsender <address>``
+	Defines the sender address to use when the sender doing the
+	push is not found in the ``--users`` file.
 
     ``--updateonly``
         Does not send out any mail notifications but still updates
